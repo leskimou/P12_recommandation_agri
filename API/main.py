@@ -69,6 +69,11 @@ def _predict_for_crops(context: Context, crops: list[str]) -> list[PredictRespon
     ]
 
 
+@app.get("/health")
+def health() -> dict:
+    return {"status": "ok", "model_loaded": model is not None}
+
+
 @app.post("/predict", response_model=PredictResponse)
 def predict(request: PredictRequest) -> PredictResponse:
     context = Context(**request.model_dump(exclude={"Crop"}))
