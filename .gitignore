@@ -1,0 +1,30 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# MLflow tracking data
+mlruns/
+
+# Artefacts d'entrainement (notebook modelisation) - filet de securite, desactives cote code
+lightning_logs/
+.pt_tmp/
+AutogluonModels/
+catboost_info/
+saved_models/
+
+# Environment variables
+.env
+
+# Data
+raw_data/
+processed_data/
+
+# Logs
+*.log
