@@ -7,3 +7,4 @@ pandas>=2.2,<3
 scikit-learn>=1.9
 lightgbm>=4.7
 catboost>=1.2
+interpret>=0.7.8

@@ -1,0 +1,72 @@
+name: API CI/CD
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "API/**"
+      - ".github/workflows/api-ci-cd.yml"
+  pull_request:
+    branches: [master]
+    paths:
+      - "API/**"
+      - ".github/workflows/api-ci-cd.yml"
+
+jobs:
+  test:
+    name: Tests (unit + fonctionnels)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: |
+            API/requirements.txt
+            API/requirements-dev.txt
+
+      - run: pip install -r API/requirements.txt -r API/requirements-dev.txt
+
+      - run: pytest API/tests -v
+
+  docker:
+    name: Build & smoke-test image
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: API
+          push: false
+          load: true
+          tags: crop-yield-api:ci
+
+      - name: Run container
+        run: docker run -d --name crop-yield-api -p 8000:8000 crop-yield-api:ci
+
+      - name: Wait for startup (telechargement du modele HF)
+        run: |
+          for i in $(seq 1 30); do
+            curl -fs http://localhost:8000/docs && exit 0
+            sleep 2
+          done
+          echo "L'API n'a pas demarre a temps" >&2
+          exit 1
+
+      - name: Appel reel /predict
+        run: |
+          curl -fs -X POST http://localhost:8000/predict \
+            -H "Content-Type: application/json" \
+            -d '{"Region":"East","Soil_Type":"Clay","Rainfall_mm":550,"Temperature_Celsius":25,"Fertilizer_Used":true,"Irrigation_Used":true,"Weather_Condition":"Sunny","Days_to_Harvest":100,"Crop":"Wheat"}'
+
+      - name: Logs du conteneur
+        if: always()
+        run: docker logs crop-yield-api
+
+      - name: Stop container
+        if: always()
+        run: docker rm -f crop-yield-api

@@ -11,7 +11,7 @@ import joblib
 import pandas as pd
 from fastapi import FastAPI
 from huggingface_hub import hf_hub_download
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 HF_REPO_ID = "leskimou/projet_12"
 HF_FILENAME = "model.pkl"
@@ -36,16 +36,18 @@ app = FastAPI(title="Crop Yield API", lifespan=lifespan)
 
 
 class Context(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     Region: Literal["East", "North", "South", "West"]
     Soil_Type: Literal["Chalky", "Clay", "Loam", "Peaty", "Sandy", "Silt"]
-    Rainfall_mm: float
-    Temperature_Celsius: float
+    Rainfall_mm: float = Field(ge=100.0, le=1000.0, description="Precipitations en mm")
+    Temperature_Celsius: float = Field(ge=15.0, le=40.0)
     Fertilizer_Used: bool
     Irrigation_Used: bool
     Weather_Condition: Literal["Cloudy", "Rainy", "Sunny"]
-    Days_to_Harvest: int
+    Days_to_Harvest: int = Field(ge=60, le=149)
     Pesticides_tonnes_avg_proxy: float | None = Field(
-        default=None, description="Optionnel, impute par le modele si absent"
+        default=None, ge=13735.0, le=20043.0, description="Optionnel, impute par le modele si absent"
     )
 
 
