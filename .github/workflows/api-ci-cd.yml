@@ -46,7 +46,7 @@ jobs:
           tags: crop-yield-api:ci
 
       - name: Run container
-        run: docker run -d --name crop-yield-api -p 8000:8000 crop-yield-api:ci
+        run: docker run -d --name crop-yield-api -p 8000:8000 -e API_KEY=test-key crop-yield-api:ci
 
       - name: Wait for startup (telechargement du modele HF)
         run: |
@@ -57,10 +57,18 @@ jobs:
           echo "L'API n'a pas demarre a temps" >&2
           exit 1
 
+      - name: Appel sans cle API (doit echouer)
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8000/predict \
+            -H "Content-Type: application/json" \
+            -d '{"Region":"East","Soil_Type":"Clay","Rainfall_mm":550,"Temperature_Celsius":25,"Fertilizer_Used":true,"Irrigation_Used":true,"Weather_Condition":"Sunny","Days_to_Harvest":100,"Crop":"Wheat"}')
+          test "$status" = "401"
+
       - name: Appel reel /predict
         run: |
           curl -fs -X POST http://localhost:8000/predict \
             -H "Content-Type: application/json" \
+            -H "X-API-Key: test-key" \
             -d '{"Region":"East","Soil_Type":"Clay","Rainfall_mm":550,"Temperature_Celsius":25,"Fertilizer_Used":true,"Irrigation_Used":true,"Weather_Condition":"Sunny","Days_to_Harvest":100,"Crop":"Wheat"}'
 
       - name: Logs du conteneur
@@ -70,3 +78,22 @@ jobs:
       - name: Stop container
         if: always()
         run: docker rm -f crop-yield-api
+
+  push:
+    name: Push image sur Docker Hub
+    needs: docker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: API
+          push: true
+          tags: leskimou/p12_recommandation_api:latest

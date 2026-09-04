@@ -10,6 +10,8 @@ import requests
 import streamlit as st
 
 API_URL = os.environ.get("API_URL", "http://localhost:8000")
+API_KEY = os.environ.get("API_KEY")
+HEADERS = {"X-API-Key": API_KEY} if API_KEY else {}
 
 REGIONS = ["East", "North", "South", "West"]
 SOIL_TYPES = ["Chalky", "Clay", "Loam", "Peaty", "Sandy", "Silt"]
@@ -56,7 +58,7 @@ if mode == "Prediction":
 
     if st.button("Predire"):
         try:
-            response = requests.post(f"{API_URL}/predict", json={**context, "Crop": crop})
+            response = requests.post(f"{API_URL}/predict", json={**context, "Crop": crop}, headers=HEADERS)
             response.raise_for_status()
             result = response.json()
             st.metric(f"Rendement predit pour {result['Crop']}", f"{result['predicted_yield']:.2f} t/ha")
@@ -66,7 +68,7 @@ if mode == "Prediction":
 else:
     if st.button("Recommander"):
         try:
-            response = requests.post(f"{API_URL}/recommend", json=context)
+            response = requests.post(f"{API_URL}/recommend", json=context, headers=HEADERS)
             response.raise_for_status()
             results = response.json()
             df = pd.DataFrame(results).rename(

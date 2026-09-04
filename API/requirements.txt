@@ -2,7 +2,10 @@ fastapi>=0.115
 uvicorn[standard]>=0.32
 pydantic>=2.9
 huggingface_hub>=0.26
+# requests : pas utilise par l'API elle-meme, mais Streamlit Community Cloud
+# prend ce fichier (meme dossier que app.py) plutot que requirements-app.txt
 joblib>=1.4
+requests>=2.32
 pandas>=2.2,<3
 scikit-learn>=1.9
 lightgbm>=4.7

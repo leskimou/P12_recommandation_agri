@@ -1,5 +1,6 @@
 """Tests fonctionnels : appels HTTP reels via TestClient, modele mocke (DummyModel)."""
 
+import main
 from conftest import VALID_CONTEXT
 
 
@@ -38,3 +39,14 @@ def test_recommend_rejects_missing_field(client):
     payload = {k: v for k, v in VALID_CONTEXT.items() if k != "Region"}
     response = client.post("/recommend", json=payload)
     assert response.status_code == 422
+
+
+def test_predict_requires_api_key_when_configured(client, monkeypatch):
+    monkeypatch.setattr(main, "API_KEY", "secret")
+    response = client.post("/predict", json={**VALID_CONTEXT, "Crop": "Wheat"})
+    assert response.status_code == 401
+
+    response = client.post(
+        "/predict", json={**VALID_CONTEXT, "Crop": "Wheat"}, headers={"X-API-Key": "secret"}
+    )
+    assert response.status_code == 200
