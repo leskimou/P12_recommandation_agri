@@ -9,6 +9,25 @@ Streamlit.
 (peut afficher un écran de réveil ou prendre 30-60s au premier appel après
 une période d'inactivité, voir [Déploiement](#déploiement-docker-hub---render---streamlit-cloud)).
 
+## Schema de la pipeline
+
+```mermaid
+flowchart TD
+    A[dataset_unifie.csv] --> B[Echantillonnage CONFIG.sample_size]
+    B --> C[Split train_val / test]
+    C -->|80%| D[train_val]
+    C -->|20%, tenu a l'ecart| E[test]
+    D --> F[K-Fold CV x CONFIG.cv_folds]
+    F --> G[7 modeles: linreg / lightgbm / catboost / xgboost / ebm / ft_transformer / autogluon]
+    G --> H[Metriques CV: rmse, mae, r2, business_cost]
+    H --> I[MLflow nested: parent model_comparison + 1 run par modele]
+    I --> J[Classement CV a titre informatif]
+    J --> K[Optuna: recherche d'hyperparametres sur EBM uniquement, interpretabilite]
+    K --> L[Refit sur train_val avec les meilleurs hyperparametres]
+    L --> M[Evaluation finale sur test]
+    M --> N[MLflow run normal, non-nested]
+```
+
 ## Installation
 
 ```
